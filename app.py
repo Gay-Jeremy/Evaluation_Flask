@@ -17,7 +17,7 @@ class HistoryEntry(db.Model) :
     id = db.Column(db.Integer, primary_key = True) 
     titre = db.Column(db.Text, nullable = False) 
     type = db.Column(db.Text, nullable = False)
-    date = db.Column(db.DateTime, nullable = False)   
+    date = db.Column(db.Date, nullable = False)   
     lieu = db.Column(db.Text, nullable = False) 
     description = db.Column(db.Text, nullable = False)
     
@@ -28,8 +28,15 @@ with app.app_context():
     db.create_all()
     
 
-@app.route("/", methods = ["GET", "POST"])
-def formulaire ():
+@app.route ("/accueil") 
+def accueil():
+    evenements = HistoryEntry.query.all()
+    return render_template("index.html", evenements = evenements)
+    
+    
+
+@app.route("/ajouter", methods = ["GET", "POST"])
+def formulaire():
     
     titre = ""
     type = ""
@@ -57,12 +64,24 @@ def formulaire ():
         
         db.session.add(entry)
         db.session.commit()
+
+        flash("Événement enregistré avec succès.", "success")
+        return redirect(url_for("formulaire"))
+        
     
-        return redirect (url_for("formulaire"))
+    return render_template("ajouter.html")
+
+
+@app.route("/evenements/<int:evenement_id>/supprimer") 
+def delete_history(evenement_id):
     
-    else :
-        return render_template("ajouter.html")
+    entry = HistoryEntry.query.get(evenement_id)
     
+    db.session.delete(entry) 
+    db.session.commit()    
+    
+    flash("Entrée d'historique supprimée avec succès.", "success")
+    return redirect(url_for("accueil"))
     
 if __name__ == "__main__":
     app.run(debug=True)
