@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///evenements.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = "supersecretkey"
 
 db = SQLAlchemy(app)
 
@@ -23,6 +23,8 @@ class Evenements(db.Model) :
     
     def __repr__(self):
         return f"evenements('{self.titre}', '{self.type_evenement}', '{self.date}', '{self.lieu}', '{self.description}')"
+    
+
 
 with app.app_context():
     db.create_all()
@@ -32,6 +34,7 @@ with app.app_context():
 def accueil():
     titrePage = "IntraEvent - Accueil"
     evenements = Evenements.query.all()
+    
     return render_template("index.html", evenements = evenements, titrePage = titrePage)
     
     
@@ -43,12 +46,22 @@ def formulaire():
     
     if request.method == "POST" :
         
-        titre = request.form.get("titre")
-        type_evenement = request.form.get("type")
+        titre = request.form.get("titre").strip()
+        type_evenement = request.form.get("type").strip()
         date = request.form.get("date")
         date_obj = datetime.strptime(date, "%Y-%m-%d").date() 
-        lieu = request.form.get("lieu")
-        description = request.form.get("description")
+        lieu = request.form.get("lieu").strip()
+        description = request.form.get("description").strip()
+        
+        if not titre or not type_evenement or not date or not lieu or not description:
+            flash("Tous les champs sont obligatoires.", "danger")
+            return redirect(url_for("formulaire"))
+    
+        
+        date_actuelle = datetime.today().date()
+        if date_obj < date_actuelle :
+            flash ("Date invalide car inférieur à date actuelle", "danger")
+            return redirect(url_for("formulaire"))
         
     
         entry = Evenements (
@@ -83,6 +96,6 @@ def delete_history(evenement_id):
     
     flash("Entrée d'historique supprimée avec succès.", "success")
     return redirect(url_for("accueil"))
-    
+
 if __name__ == "__main__":
     app.run(debug=True)
