@@ -1,6 +1,6 @@
-from flask import Flask, request, render_template, redirect, flash, url_for
+from flask import Flask, request, render_template, redirect, flash, url_for,jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, date
 
 
 app = Flask(__name__)
@@ -40,7 +40,7 @@ def accueil():
     
 
 @app.route("/ajouter", methods = ["GET", "POST"])
-def formulaire():
+def ajouter_evenement():
     
     titrePage = "IntraEvent - Ajout événement"
     
@@ -54,14 +54,14 @@ def formulaire():
         description = request.form.get("description").strip()
         
         if not titre or not type_evenement or not date or not lieu or not description:
-            flash("Tous les champs sont obligatoires.", "danger")
-            return redirect(url_for("formulaire"))
+            flash("Tous les champs doivent être remplie.", "danger")
+            return redirect(url_for("ajouter_evenement"))
     
         
         date_actuelle = datetime.today().date()
         if date_obj < date_actuelle :
             flash ("Date invalide car inférieur à date actuelle", "danger")
-            return redirect(url_for("formulaire"))
+            return redirect(url_for("ajouter_evenement"))
         
     
         entry = Evenements (
@@ -76,14 +76,14 @@ def formulaire():
         db.session.commit()
 
         flash("Événement enregistré avec succès.", "success")
-        return redirect(url_for("formulaire"))
+        return redirect(url_for("ajouter_evenement"))
         
     
     return render_template("ajouter.html", titrePage = titrePage)
 
 
 @app.route("/evenements/<int:evenement_id>/supprimer") 
-def delete_history(evenement_id):
+def supprimer_evenement(evenement_id):
     
     entry = Evenements.query.get(evenement_id)
     
@@ -96,6 +96,34 @@ def delete_history(evenement_id):
     
     flash("Entrée d'historique supprimée avec succès.", "success")
     return redirect(url_for("accueil"))
+
+
+@app.route("/api/evenements", methods=["GET"])
+def list_evenements():
+    
+    date_actuelle = datetime.today().date()
+    
+    evenements = (Evenements.query
+                .filter(Evenements.date >= date_actuelle)
+                .order_by(Evenements.date.asc())
+                .limit(5)
+                .all())
+    
+    list_evenement = []
+    
+    for evenement in evenements :
+        
+        list_evenement.append({
+            "titre": evenement.titre,
+            "type_evenement": evenement.type_evenement,
+            "date": evenement.date.strftime("%Y-%m-%d"),
+            "lieu": evenement.lieu,
+            "description": evenement.description
+        })
+
+    return jsonify({
+        "evenements" : list_evenement
+    })
 
 if __name__ == "__main__":
     app.run(debug=True)
