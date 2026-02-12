@@ -11,54 +11,49 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class HistoryEntry(db.Model) :
+class Evenements(db.Model) :
     __tablename__ = 'evenements'
     
     id = db.Column(db.Integer, primary_key = True) 
     titre = db.Column(db.Text, nullable = False) 
-    type = db.Column(db.Text, nullable = False)
+    type_evenement = db.Column(db.Text, nullable = False)
     date = db.Column(db.Date, nullable = False)   
     lieu = db.Column(db.Text, nullable = False) 
     description = db.Column(db.Text, nullable = False)
     
     def __repr__(self):
-        return f"evenements('{self.titre}', '{self.type}', '{self.date}', '{self.lieu}', '{self.description}')"
+        return f"evenements('{self.titre}', '{self.type_evenement}', '{self.date}', '{self.lieu}', '{self.description}')"
 
 with app.app_context():
     db.create_all()
     
 
-@app.route ("/accueil") 
+@app.route ("/") 
 def accueil():
     titrePage = "IntraEvent - Accueil"
-    evenements = HistoryEntry.query.all()
+    evenements = Evenements.query.all()
     return render_template("index.html", evenements = evenements, titrePage = titrePage)
     
     
 
 @app.route("/ajouter", methods = ["GET", "POST"])
 def formulaire():
-    titrePage = "IntraEvent - Ajout événement"
     
-    titre = ""
-    type = ""
-    date = ""
-    lieu = ""
-    description = ""
+    titrePage = "IntraEvent - Ajout événement"
     
     if request.method == "POST" :
         
         titre = request.form.get("titre")
-        type = request.form.get("type")
+        type_evenement = request.form.get("type")
         date = request.form.get("date")
         date_obj = datetime.strptime(date, "%Y-%m-%d").date() 
         lieu = request.form.get("lieu")
         description = request.form.get("description")
         
     
-        entry = HistoryEntry (
+        entry = Evenements (
             titre = titre,
-            type = type,
+            type_evenement = type_evenement,
             date = date_obj,
             lieu = lieu,
             description = description
@@ -77,7 +72,11 @@ def formulaire():
 @app.route("/evenements/<int:evenement_id>/supprimer") 
 def delete_history(evenement_id):
     
-    entry = HistoryEntry.query.get(evenement_id)
+    entry = Evenements.query.get(evenement_id)
+    
+    if not entry :
+        flash("L'événement n'existe pas", "danger")
+        return redirect(url_for("accueil"))
     
     db.session.delete(entry) 
     db.session.commit()    
