@@ -30,13 +30,15 @@ with app.app_context():
 
 @app.route ("/accueil") 
 def accueil():
+    titrePage = "IntraEvent - Accueil"
     evenements = HistoryEntry.query.all()
-    return render_template("index.html", evenements = evenements)
+    return render_template("index.html", evenements = evenements, titrePage = titrePage)
     
     
 
 @app.route("/ajouter", methods = ["GET", "POST"])
 def formulaire():
+    titrePage = "IntraEvent - Ajout événement"
     
     titre = ""
     type = ""
@@ -69,7 +71,7 @@ def formulaire():
         return redirect(url_for("formulaire"))
         
     
-    return render_template("ajouter.html")
+    return render_template("ajouter.html", titrePage = titrePage)
 
 
 @app.route("/evenements/<int:evenement_id>/supprimer") 
